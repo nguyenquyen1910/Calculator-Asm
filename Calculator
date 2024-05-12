@@ -1,0 +1,256 @@
+org 100h
+
+jmp start       ; jump over data declaration
+
+msg:    db      "1-Add",0dh,0ah,"2-Multiply",0dh,0ah,"3-Subtract",0dh,0ah,"4-Divide", 0Dh,0Ah, '$'
+msg2:    db      0dh,0ah,"Enter First Num : $"
+msg3:    db      0dh,0ah,"Enter Second Num : $"
+msg4:    db      0dh,0ah,"Choice Error $" 
+msg5:    db      0dh,0ah,"Result : $" 
+msg6:    db      0dh,0ah,"thank you for using the calculator! press any key... ", 0Dh,0Ah, '$'
+msg7:    db      0dh,0ah,"Choose Any One: $" 
+msg8:    db      0dh,0ah,"Continue program y/n? $"      
+
+
+
+YesNoPrompt:    ; Hoi nguoi dung co muon tiep tuc khong
+            ; Hien thi thong bao
+
+            LEA DX, msg8
+            MOV AH, 9
+            INT 21H
+                     
+            mov ah, 0
+            int 16h  ; nhap lua con cua nguoi dung
+                    
+            ; Hien thi lua chon cho nguoi dung
+            mov ah, 2  
+            mov dl, al 
+            int 21h         ; Nhap ki tu
+
+            cmp al, 'y'     ;So sanh voi 'y'
+            je print_newline    ; Neu là 'y' ti? in ra ki tu xuong dong
+            cmp al, 'Y'     ; Tuong tu voi 'Y'
+            je print_newline   
+            cmp al, 'n'     ; So sánh voi 'n' - Tu choi
+            je exit_program ; Neu là 'n' thi thoat chuong trinh
+            cmp al, 'N'     ; Tuong tu voi 'N'
+            je exit_program ; 
+            ret             ; Neu khac cac ki tu tren thi thoat luon chuong trinh
+
+print_newline:  ; In ra ki tu xuong dong
+            MOV DL, 10
+            MOV AH, 2
+            INT 21H
+            MOV DL, 13    ; In ra ki tu xuong dong
+            INT 21H
+            ret             ; Tra ve lenh goi ham
+
+exit_program:
+            MOV AH, 4CH    ; Goi ham thoat
+            INT 21H
+
+
+
+
+start:   
+            mov ah, 9
+            mov dx, offset msg ; Hien thi cac lua chon
+            int 21h
+                    
+            LEA DX, msg7
+            MOV AH, 9
+            INT 21H
+                    
+            mov ah, 0
+            int 16h  ; Nhap lua chon cua nguoi dung
+                    
+            ; Hien thi lua chon cua nguoi dung
+            mov ah, 2  
+            mov dl, al 
+            int 21h    
+                    
+            cmp al, 31h ; So sanh lua chon cua nguoi dung
+            je Addition
+            cmp al, 32h
+            je Multiply
+            cmp al, 33h
+            je Subtract
+            cmp al, 34h
+            je Divide
+                    
+            mov ah, 09h
+            mov dx, offset msg4
+            int 21h
+            mov ah, 0
+            int 16h
+            jmp start
+
+
+        
+InputNum:    mov ah,0
+            int 16h ;Doc input tu ban phim     
+            mov dx,0  
+            mov bx,1 
+            cmp al,0dh ;So sanh voi 0dh de xem da nhap xong chua 
+            je FormNum ;Neu la phim enter thi luu so do vao stack
+            sub ax,30h ;Chuyen so ve dang thap phan
+            call ViewNum ;Goi ham ViewNo de xem thong tin da nhap
+            mov ah,0 ;chuyen 0 vao ah truoc khi day ax vao stack
+            push ax  ;day ax vao
+            inc cx   ;tang cx len 1 don vi vi day la bo dem so chu so
+            jmp InputNum ;Quay lai den khi nhan duoc phim Enter        
+   
+
+;Lay tung so rieng biet va luu tru trong 1 bit
+FormNum:     pop ax  
+            push dx      
+            mul bx
+            pop dx
+            add dx,ax
+            mov ax,bx       
+            mov bx,10
+            push dx
+            mul bx
+            pop dx
+            mov bx,ax
+            dec cx
+            cmp cx,0
+            jne FormNum
+            ret   
+
+
+       
+       
+View:  mov ax,dx
+       mov dx,0
+       div cx 
+       call ViewNum
+       mov bx,dx 
+       mov dx,0
+       mov ax,cx 
+       mov cx,10
+       div cx
+       mov dx,bx 
+       mov cx,ax
+       cmp ax,0
+       jne View
+       ret
+
+
+ViewNum:   push ax ;day ax va dx vao ngan xep
+           push dx
+           mov dx,ax ;day gia tri sang dx de dau ra duoc luu trong do
+           add dl,30h ;Chuyen sang ascii
+           mov ah,2
+           int 21h
+           pop dx  
+           pop ax
+           ret
+      
+Addition:   mov ah,09h  ;Xu ly toan tu cong
+            mov dx, offset msg2  ;Hien thi thong bao Nhap so dau tien
+            int 21h
+            mov cx,0 ;Goi ham InputNo de xu ly toan hang dau vao
+            call InputNum  ;Dat lai thanh ghi thanh 0 de xu ly lai tu dau
+            push dx
+            mov ah,9
+            mov dx, offset msg3
+            int 21h 
+            mov cx,0
+            call InputNum
+            pop bx
+            add dx,bx
+            push dx 
+            mov ah,9
+            mov dx, offset msg5
+            int 21h
+            mov cx,10000
+            pop dx
+            call View 
+            call YesNoPrompt
+            jmp start  
+                 
+                       
+Multiply:   mov ah,09h
+            mov dx, offset msg2
+            int 21h
+            mov cx,0
+            call InputNum
+            push dx
+            mov ah,9
+            mov dx, offset msg3
+            int 21h 
+            mov cx,0
+            call InputNum
+            pop bx
+            mov ax,dx
+            mul bx 
+            mov dx,ax
+            push dx 
+            mov ah,9
+            mov dx, offset msg5
+            int 21h
+            mov cx,10000
+            pop dx
+            call View 
+            call YesNoPrompt
+            jmp start 
+
+
+Subtract:   mov ah,09h
+            mov dx, offset msg2
+            int 21h
+            mov cx,0
+            call InputNum
+            push dx
+            mov ah,9
+            mov dx, offset msg3
+            int 21h 
+            mov cx,0
+            call InputNum
+            pop bx
+            sub bx,dx
+            mov dx,bx
+            push dx 
+            mov ah,9
+            mov dx, offset msg5
+            int 21h
+            mov cx,10000
+            pop dx
+            call View 
+            call YesNoPrompt
+            jmp start 
+    
+            
+Divide:     mov ah,09h
+            mov dx, offset msg2
+            int 21h
+            mov cx,0
+            call InputNum
+            push dx
+            mov ah,9
+            mov dx, offset msg3
+            int 21h 
+            mov cx,0
+            call InputNum
+            pop bx
+            mov ax,bx
+            mov cx,dx
+            mov dx,0
+            mov bx,0
+            div cx
+            mov bx,dx
+            mov dx,ax
+            push bx 
+            push dx 
+            mov ah,9
+            mov dx, offset msg5
+            int 21h
+            mov cx,10000
+            pop dx
+            call View
+            pop bx
+            cmp bx,0
+            call YesNoPrompt
+            jmp start  
